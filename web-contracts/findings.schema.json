@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CompatGateReport",
+  "type": "object",
+  "required": ["protocols", "summary", "findings", "meta"],
+  "properties": {
+    "protocols": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["openapi", "graphql", "grpc", "asyncapi"]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["finding_count", "breaking_count", "error_count", "warn_count", "info_count"],
+      "properties": {
+        "finding_count": { "type": "integer" },
+        "breaking_count": { "type": "integer" },
+        "error_count": { "type": "integer" },
+        "warn_count": { "type": "integer" },
+        "info_count": { "type": "integer" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["protocol", "rule_id", "severity", "breaking", "resource", "message"],
+        "properties": {
+          "protocol": { "type": "string" },
+          "rule_id": { "type": "string" },
+          "severity": { "type": "string" },
+          "breaking": { "type": "boolean" },
+          "resource": { "type": "string" },
+          "message": { "type": "string" },
+          "before": {},
+          "after": {},
+          "labels": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "source_location": {
+            "type": "object",
+            "properties": {
+              "file": { "type": "string" },
+              "line": { "type": "integer" },
+              "column": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["base", "revision", "generated_at"],
+      "properties": {
+        "base": { "type": "string" },
+        "revision": { "type": "string" },
+        "generated_at": { "type": "string" }
+      }
+    }
+  }
+}

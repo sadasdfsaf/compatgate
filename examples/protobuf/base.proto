@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+service Users {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+message GetUserRequest {
+  optional string id = 1;
+  optional string role = 2;
+}
+
+message GetUserResponse {
+  optional string id = 1;
+  optional string name = 2;
+}

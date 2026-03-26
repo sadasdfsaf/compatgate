@@ -1,0 +1,7 @@
+severity_threshold: warn
+ignore_rules: []
+include_paths: []
+exclude_paths: []
+cloud:
+  base_url: http://localhost:8080
+  project_token: ""

@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: CompatGate API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      parameters:
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum: [admin, member, guest]
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        email:
+                          type: string
+                        status:
+                          type: string
+                  count:
+                    type: object
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, member, guest]
+              required: []
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  updatedAt:
+                    type: string
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: ok

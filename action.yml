@@ -1,0 +1,139 @@
+name: CompatGate
+description: Catch breaking API changes across OpenAPI, GraphQL, gRPC/Protobuf, and AsyncAPI in CI.
+
+inputs:
+  base:
+    description: Base contract file or URL.
+    required: true
+  revision:
+    description: Revision contract file or URL.
+    required: true
+  config:
+    description: Optional path to .compatgate.yml.
+    required: false
+    default: ""
+  protocol:
+    description: Protocol to analyze: openapi, graphql, grpc, or asyncapi.
+    required: true
+  fail-on:
+    description: Threshold for failing the job: error, warn, or never.
+    required: false
+    default: error
+  upload-to-cloud:
+    description: Upload the generated report to the CompatGate API.
+    required: false
+    default: "false"
+  project-token:
+    description: Project token used for report upload.
+    required: false
+    default: ""
+  project-id:
+    description: Optional project id used for report upload.
+    required: false
+    default: ""
+  cloud-url:
+    description: CompatGate API base URL.
+    required: false
+    default: http://localhost:8080
+
+outputs:
+  report-path:
+    description: Absolute path to the generated JSON report.
+    value: ${{ steps.compatgate.outputs.report_path }}
+  markdown-path:
+    description: Absolute path to the generated Markdown report.
+    value: ${{ steps.compatgate.outputs.markdown_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache-dependency-path: ${{ github.action_path }}/go.sum
+
+    - name: Run CompatGate
+      id: compatgate
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        ACTION_DIR="${{ github.action_path }}"
+        WORKSPACE="${{ github.workspace }}"
+        REPORT_PATH="$RUNNER_TEMP/compatgate-report.json"
+        MARKDOWN_PATH="$RUNNER_TEMP/compatgate-report.md"
+
+        resolve_path() {
+          local value="$1"
+          if [ -z "$value" ]; then
+            printf '%s' ""
+            return
+          fi
+          case "$value" in
+            http://*|https://*|/*)
+              printf '%s' "$value"
+              ;;
+            [A-Za-z]:[\\/]*)
+              printf '%s' "$value"
+              ;;
+            *)
+              printf '%s/%s' "$WORKSPACE" "$value"
+              ;;
+          esac
+        }
+
+        BASE="$(resolve_path "${{ inputs.base }}")"
+        REVISION="$(resolve_path "${{ inputs.revision }}")"
+        CONFIG="$(resolve_path "${{ inputs.config }}")"
+
+        DIFF_ARGS=(
+          diff
+          --protocol "${{ inputs.protocol }}"
+          --base "$BASE"
+          --revision "$REVISION"
+          --format json
+          --output "$REPORT_PATH"
+          --fail-on "${{ inputs.fail-on }}"
+        )
+
+        if [ -n "$CONFIG" ]; then
+          DIFF_ARGS+=(--config "$CONFIG")
+        fi
+
+        pushd "$ACTION_DIR" >/dev/null
+        go run ./cmd/compatgate "${DIFF_ARGS[@]}"
+        go run ./cmd/compatgate report \
+          --input "$REPORT_PATH" \
+          --format markdown \
+          --output "$MARKDOWN_PATH"
+        popd >/dev/null
+
+        if [ "${{ inputs.upload-to-cloud }}" = "true" ]; then
+          if [ -z "${{ inputs.project-token }}" ]; then
+            echo "project-token is required when upload-to-cloud=true" >&2
+            exit 1
+          fi
+
+          pushd "$ACTION_DIR" >/dev/null
+          go run ./cmd/compatgate upload \
+            --input "$REPORT_PATH" \
+            --cloud-url "${{ inputs.cloud-url }}" \
+            --project-token "${{ inputs.project-token }}" \
+            --project-id "${{ inputs.project-id }}" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --sha "${GITHUB_SHA}" \
+            --ref "${GITHUB_REF}"
+          popd >/dev/null
+        fi
+
+        {
+          echo "report_path=$REPORT_PATH"
+          echo "markdown_path=$MARKDOWN_PATH"
+        } >>"$GITHUB_OUTPUT"
+
+        {
+          echo "## CompatGate"
+          echo
+          cat "$MARKDOWN_PATH"
+        } >>"$GITHUB_STEP_SUMMARY"

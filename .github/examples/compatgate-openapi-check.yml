@@ -1,0 +1,22 @@
+name: CompatGate OpenAPI Check
+
+on:
+  pull_request:
+    paths:
+      - examples/openapi/revision.yaml
+      - .compatgate.yml
+
+jobs:
+  compatgate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare OpenAPI contracts
+        uses: compatgate/compatgate@main
+        with:
+          protocol: openapi
+          base: examples/openapi/base.yaml
+          revision: examples/openapi/revision.yaml
+          config: .compatgate.yml
+          fail-on: error

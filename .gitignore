@@ -1,0 +1,11 @@
+.tools/
+apps/web/.next/
+apps/web/node_modules/
+apps/web/.env
+apps/web/.env.local
+coverage/
+dist/
+tmp/
+*.db
+*.log
+*.out

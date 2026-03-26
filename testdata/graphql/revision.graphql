@@ -1,0 +1,13 @@
+type Query {
+  user(id: ID!, includePosts: Boolean): User!
+}
+
+type User {
+  id: ID!
+  role: Role
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}

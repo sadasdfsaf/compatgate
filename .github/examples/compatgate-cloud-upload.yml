@@ -1,0 +1,24 @@
+name: CompatGate Cloud Upload
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  compatgate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload GraphQL report to CompatGate API
+        uses: compatgate/compatgate@main
+        with:
+          protocol: graphql
+          base: examples/graphql/base.graphql
+          revision: examples/graphql/revision.graphql
+          fail-on: error
+          upload-to-cloud: "true"
+          project-token: ${{ secrets.COMPATGATE_PROJECT_TOKEN }}
+          project-id: ${{ vars.COMPATGATE_PROJECT_ID }}
+          cloud-url: ${{ vars.COMPATGATE_CLOUD_URL }}

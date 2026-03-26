@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  go-test:
+    name: Go Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Run gofmt check
+        run: test -z "$(gofmt -l .)"
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: CLI smoke check on examples
+        run: |
+          go run ./cmd/compatgate diff \
+            --protocol openapi \
+            --base ./examples/openapi/base.yaml \
+            --revision ./examples/openapi/revision.yaml \
+            --format json \
+            --output ./compatgate-report.json
+          test -f ./compatgate-report.json
+
+  web-check:
+    name: Web Check
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('apps/web/package.json') != '' }}
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_COMPATGATE_API_BASE_URL: http://localhost:8080
+          NEXT_PUBLIC_COMPATGATE_DEV_USER: compatgate-dev
+          GITHUB_CLIENT_ID: test
+          GITHUB_CLIENT_SECRET: test
+          COMPATGATE_WEB_URL: http://localhost:3000
+        run: npm run build

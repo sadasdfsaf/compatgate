@@ -1,0 +1,26 @@
+asyncapi: 2.6.0
+channels:
+  users.created:
+    publish:
+      message:
+        payload:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+            role:
+              type: string
+            profile:
+              type: object
+              properties:
+                nickname:
+                  type: string
+  users.updated:
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            email:
+              type: string
